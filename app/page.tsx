@@ -126,6 +126,7 @@ export default function KioskPage() {
           <p className="mt-1 text-[11px] md:text-xs text-slate-400">{boot.title_line2}</p>
         </header>
 
+        <div className="flex w-full flex-col items-center md:flex-1 md:justify-center">
         <div className="relative mt-8 w-full max-w-sm">
           <span className="pointer-events-none absolute -top-2 -left-2 h-8 w-8 border-t-4 border-l-4 border-emerald-400 rounded-tl" />
           <span className="pointer-events-none absolute -top-2 -right-2 h-8 w-8 border-t-4 border-r-4 border-emerald-400 rounded-tr" />
@@ -164,6 +165,7 @@ export default function KioskPage() {
             {error}
           </div>
         )}
+        </div>
 
         <p className="mt-auto pt-8 text-[10px] text-slate-600">developed by Flexbox Indonesia</p>
       </div>
