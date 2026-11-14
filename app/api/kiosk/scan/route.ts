@@ -16,9 +16,17 @@ export async function POST(req: Request) {
   const [voter] = await sql`select id, name, has_voted from voters where token = ${code}`;
   if (!voter) return NextResponse.json({ error: "Kode peserta tidak terdaftar." }, { status: 404 });
 
+  if (settings.vote_mode === "live" && voter.has_voted) {
+    return NextResponse.json(
+      { error: "Undangan ini sudah digunakan untuk mencoblos. Pada mode live, 1 undangan berlaku 1 suara." },
+      { status: 409 }
+    );
+  }
+
   return NextResponse.json({
     ballot: makeToken(`v${voter.id}`, 300),
     voterName: voter.name,
     revote: voter.has_voted,
+    mode: settings.vote_mode === "live" ? "live" : "simulasi",
   });
 }

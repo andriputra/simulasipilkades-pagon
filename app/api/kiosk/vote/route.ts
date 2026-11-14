@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { audit, clientIp } from "@/lib/audit";
 import { verifyToken } from "@/lib/auth";
-import { ensureSchema, sql } from "@/lib/db";
+import { ensureSchema, getSettings, sql } from "@/lib/db";
 
 export async function POST(req: Request) {
   await ensureSchema();
@@ -19,11 +19,14 @@ export async function POST(req: Request) {
   const [cand] = await sql`select id from candidates where id = ${candidateId} and active = true`;
   if (!cand) return NextResponse.json({ error: "Calon tidak ditemukan." }, { status: 404 });
 
+  const liveMode = (await getSettings()).vote_mode === "live";
+
   let isRevote = false;
   try {
     await sql.begin(async (tx) => {
       const [voter] = await tx`select id, has_voted from voters where id = ${voterId} for update`;
       if (!voter) throw new Error("VOTER_NOT_FOUND");
+      if (voter.has_voted && liveMode) throw new Error("VOTE_LOCKED");
       isRevote = voter.has_voted;
       if (isRevote) {
         await tx`update votes set candidate_id = ${candidateId}, created_at = now() where voter_id = ${voterId}`;
@@ -37,6 +40,12 @@ export async function POST(req: Request) {
     const msg = err instanceof Error ? err.message : "";
     if (msg === "VOTER_NOT_FOUND") {
       return NextResponse.json({ error: "Pemilih tidak ditemukan." }, { status: 404 });
+    }
+    if (msg === "VOTE_LOCKED") {
+      return NextResponse.json(
+        { error: "Suara pemilih ini sudah terkunci. Pada mode live, 1 undangan hanya berlaku 1 suara." },
+        { status: 409 }
+      );
     }
     throw err;
   }

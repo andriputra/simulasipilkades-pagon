@@ -33,7 +33,9 @@ export async function GET(req: Request) {
     });
   }
 
-  const [statusRow] = await sql`select value from settings where key = 'election_status'`;
+  const settingRows = await sql`select key, value from settings where key in ('election_status', 'vote_mode')`;
+  const sm: Record<string, string> = {};
+  for (const r of settingRows) sm[r.key] = r.value;
   const recent = await sql`select id, action, detail, created_at from audit_logs
                             where action in ('VOTE_CAST', 'VOTE_UPDATED', 'VOTES_RESET')
                             order by id desc limit 10`;
@@ -41,7 +43,8 @@ export async function GET(req: Request) {
   return NextResponse.json({
     candidates: rows,
     totals: tot,
-    status: statusRow?.value === "closed" ? "closed" : "open",
+    status: sm.election_status === "closed" ? "closed" : "open",
+    vote_mode: sm.vote_mode === "live" ? "live" : "simulasi",
     recent,
   });
 }

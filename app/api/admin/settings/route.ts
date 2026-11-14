@@ -8,6 +8,7 @@ const PUBLIC_KEYS = [
   "title_line1",
   "title_line2",
   "election_status",
+  "vote_mode",
   "admin_username",
   "invite_date",
   "invite_time",
@@ -45,6 +46,22 @@ export async function PUT(req: Request) {
     const status = body.election_status === "closed" ? "closed" : "open";
     await setSetting("election_status", status);
     changed.push(`status pemungutan: ${status}`);
+  }
+  if (body.vote_mode !== undefined) {
+    const mode = body.vote_mode === "live" ? "live" : "simulasi";
+    const prev = (await getSettings()).vote_mode === "live" ? "live" : "simulasi";
+    await setSetting("vote_mode", mode);
+    changed.push(`mode pemungutan: ${mode}`);
+    if (mode !== prev) {
+      await audit(
+        "VOTE_MODE_CHANGED",
+        mode === "live"
+          ? "Mode diubah ke LIVE — 1 undangan hanya berlaku 1 suara, suara terkunci"
+          : "Mode diubah ke SIMULASI — kode boleh dipakai ulang, suara terakhir menimpa",
+        "admin",
+        ip
+      );
+    }
   }
   const TEXT_KEYS = ["title_line1", "title_line2", "invite_date", "invite_time", "invite_tps", "invite_address", "invite_watermark"] as const;
   for (const key of TEXT_KEYS) {

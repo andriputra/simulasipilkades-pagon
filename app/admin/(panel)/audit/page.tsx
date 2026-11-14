@@ -13,6 +13,8 @@ const BADGE: Record<string, string> = {
   VOTER_UPDATED: "bg-sky-100 text-sky-700",
   VOTER_DELETED: "bg-orange-100 text-orange-700",
   VOTE_UPDATED: "bg-indigo-100 text-indigo-700",
+  VOTER_UNLOCKED: "bg-amber-100 text-amber-800",
+  VOTE_MODE_CHANGED: "bg-cyan-100 text-cyan-700",
 };
 
 export default async function AdminAuditPage() {

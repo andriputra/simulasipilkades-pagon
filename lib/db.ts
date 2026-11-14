@@ -93,6 +93,7 @@ export function ensureSchema(): Promise<void> {
           title_line1: "PEMERINTAH DESA SUKAMAJU",
           title_line2: "SIMULASI PEMILIHAN KEPALA DESA PERIODE 2026-2032",
           election_status: "open",
+          vote_mode: "simulasi",
           admin_username: "admin",
           admin_password_hash: hashPassword(process.env.ADMIN_PASSWORD || "admin123"),
           invite_date: "Minggu 6 Desember 2026",

@@ -130,6 +130,7 @@ export default function AdminVotersPage() {
   const [filter, setFilter] = useState<"all" | "belum" | "sudah">("all");
   const [busy, setBusy] = useState(false);
   const [toDelete, setToDelete] = useState<Voter | null>(null);
+  const [toUnlock, setToUnlock] = useState<Voter | null>(null);
   const [editing, setEditing] = useState<Voter | null>(null);
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
@@ -195,6 +196,19 @@ export default function AdminVotersPage() {
       return;
     }
     toast("Pemilih dihapus.", "success");
+    load();
+  };
+
+  const doUnlock = async () => {
+    if (!toUnlock) return;
+    const res = await fetch(`/api/admin/voters/${toUnlock.id}/unlock`, { method: "POST" });
+    const data = await res.json().catch(() => ({}));
+    setToUnlock(null);
+    if (!res.ok) {
+      toast(data.error || "Gagal membuka kunci suara.", "error");
+      return;
+    }
+    toast(`Suara "${toUnlock.name}" dihapus, kodenya bisa dicoblos lagi.`, "success");
     load();
   };
 
@@ -341,6 +355,14 @@ export default function AdminVotersPage() {
                       >
                         Cetak
                       </a>
+                      {v.has_voted && (
+                        <button
+                          onClick={() => setToUnlock(v)}
+                          className="rounded-md border border-amber-300 px-2.5 py-1 text-[11px] font-semibold text-amber-700 hover:bg-amber-50"
+                        >
+                          Buka Kunci
+                        </button>
+                      )}
                       <button
                         onClick={() => setToDelete(v)}
                         disabled={v.has_voted}
@@ -418,6 +440,15 @@ export default function AdminVotersPage() {
       </div>
 
       {editing && <EditVoterModal voter={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); load(); }} />}
+
+      <ConfirmModal
+        open={!!toUnlock}
+        title="Buka kunci suara pemilih?"
+        message={`Suara "${toUnlock?.name || ""}" (${toUnlock?.token || ""}) akan dihapus dari rekap dan kodenya berlaku lagi untuk mencoblos. Pilihan lama tidak disimpan.`}
+        confirmLabel="Buka Kunci"
+        onConfirm={doUnlock}
+        onCancel={() => setToUnlock(null)}
+      />
 
       <ConfirmModal
         open={!!toDelete}

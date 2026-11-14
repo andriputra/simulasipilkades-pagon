@@ -10,6 +10,7 @@ export async function GET() {
     await sql`select id, number, name, tagline, photo_url from candidates where active = true order by number`;
   return NextResponse.json({
     status: map.election_status === "closed" ? "closed" : "open",
+    vote_mode: map.vote_mode === "live" ? "live" : "simulasi",
     title_line1: map.title_line1 || "",
     title_line2: map.title_line2 || "",
     candidates,

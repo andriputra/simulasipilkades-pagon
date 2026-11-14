@@ -85,6 +85,7 @@ export default function AdminSettingsPage() {
   const [title1, setTitle1] = useState("");
   const [title2, setTitle2] = useState("");
   const [status, setStatus] = useState<"open" | "closed">("open");
+  const [mode, setMode] = useState<"simulasi" | "live">("simulasi");
   const [saving, setSaving] = useState(false);
   const [inviteDate, setInviteDate] = useState("");
   const [inviteTime, setInviteTime] = useState("");
@@ -109,6 +110,7 @@ export default function AdminSettingsPage() {
           setTitle1(s.title_line1 || "");
           setTitle2(s.title_line2 || "");
           setStatus(s.election_status === "closed" ? "closed" : "open");
+          setMode(s.vote_mode === "live" ? "live" : "simulasi");
           setInviteDate(s.invite_date || "Minggu 6 Desember 2026");
           setInviteTime(s.invite_time || "07:00 s/d 13:00 WIB");
           setInviteTps(s.invite_tps || "01 s/d 06");
@@ -153,7 +155,7 @@ export default function AdminSettingsPage() {
     const res = await fetch("/api/admin/settings", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title_line1: title1, title_line2: title2, election_status: status }),
+      body: JSON.stringify({ title_line1: title1, title_line2: title2, election_status: status, vote_mode: mode }),
     });
     setSaving(false);
     if (!res.ok) {
@@ -283,6 +285,54 @@ export default function AdminSettingsPage() {
                 <option value="closed">Ditutup — kiosk menampilkan pengumuman</option>
               </select>
             </Field>
+            <div>
+              <span className="block text-xs font-semibold text-slate-700">Mode data</span>
+              <p className="mt-0.5 text-[11px] text-slate-500">
+                Aturan pemakaian kode undangan. Tekan &ldquo;Simpan Pengaturan&rdquo; untuk menerapkan.
+              </p>
+              <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {(["simulasi", "live"] as const).map((m) => {
+                  const active = mode === m;
+                  return (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setMode(m)}
+                      aria-pressed={active}
+                      className={`rounded-md border px-3 py-2.5 text-left transition-colors ${
+                        active
+                          ? m === "live"
+                            ? "border-amber-500 bg-amber-50 ring-2 ring-amber-500/20"
+                            : "border-blue-600 bg-blue-50 ring-2 ring-blue-600/20"
+                          : "border-slate-300 bg-white hover:bg-slate-50"
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <span
+                          className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border ${
+                            active ? "border-current" : "border-slate-400"
+                          }`}
+                        >
+                          {active && <span className={`h-1.5 w-1.5 rounded-full ${m === "live" ? "bg-amber-600" : "bg-blue-700"}`} />}
+                        </span>
+                        <span className="text-xs font-bold text-slate-800">{m === "live" ? "Live / Data Sebenarnya" : "Simulasi"}</span>
+                      </span>
+                      <span className="mt-1 block pl-5 text-[11px] leading-snug text-slate-600">
+                        {m === "live"
+                          ? "1 undangan = 1 suara. Kode yang sudah dicoblos ditolak kiosk dan suara tidak bisa diubah."
+                          : "Kode boleh discan berulang, suara terakhir menimpa. Dipakai untuk latihan/demo."}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              {mode === "live" && (
+                <p className="mt-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-[11px] leading-snug text-amber-800">
+                  Pada mode live, pemilih yang sudah tercatat mencoblos langsung terkunci — termasuk suara hasil simulasi
+                  sebelumnya. Bila ada yang salah coblos, buka kuncinya lewat tombol <b>Buka Kunci</b> di menu Pemilih &amp; QR.
+                </p>
+              )}
+            </div>
             <div className="flex justify-end">
               <button type="submit" disabled={saving} className={btnPrimary}>
                 {saving ? "Menyimpan…" : "Simpan Pengaturan"}

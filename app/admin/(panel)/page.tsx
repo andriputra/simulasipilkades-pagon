@@ -9,6 +9,7 @@ type Payload = {
   candidates: RecapRow[];
   totals: Totals;
   status: "open" | "closed";
+  vote_mode: "simulasi" | "live";
   recent: LiveRow[];
 };
 
@@ -198,6 +199,21 @@ export default function AdminDashboardPage() {
                 }`}
               >
                 {data?.status === "closed" ? "DITUTUP" : "DIBUKA"}
+              </span>
+            </span>
+            <span>
+              Mode:{" "}
+              <span
+                className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                  data?.vote_mode === "live" ? "bg-amber-100 text-amber-800" : "bg-slate-100 text-slate-600"
+                }`}
+                title={
+                  data?.vote_mode === "live"
+                    ? "1 undangan hanya berlaku 1 suara — suara terkunci"
+                    : "Kode boleh dipakai ulang, suara terakhir yang dihitung"
+                }
+              >
+                {data?.vote_mode === "live" ? "LIVE · 1 UNDIANGAN 1 SUARA" : "SIMULASI"}
               </span>
             </span>
             <span className="text-slate-300">|</span>

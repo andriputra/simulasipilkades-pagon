@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import QrScanner from "@/components/QrScanner";
 
 type Candidate = { id: number; number: number; name: string; tagline: string; photo_url: string };
-type Boot = { status: "open" | "closed"; title_line1: string; title_line2: string; candidates: Candidate[] };
+type Boot = { status: "open" | "closed"; vote_mode: "simulasi" | "live"; title_line1: string; title_line2: string; candidates: Candidate[] };
 type Step = "scan" | "pilih" | "konfirmasi" | "sukses";
 
 export default function KioskPage() {
@@ -124,6 +124,10 @@ export default function KioskPage() {
         <header className="text-center">
           <h1 className="text-lg md:text-xl font-bold tracking-wide">{boot.title_line1}</h1>
           <p className="mt-1 text-[11px] md:text-xs text-slate-400">{boot.title_line2}</p>
+          <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-[10px] font-semibold tracking-wide text-slate-300">
+            <span className={`h-1.5 w-1.5 rounded-full ${boot.vote_mode === "live" ? "bg-amber-400" : "bg-slate-500"}`} />
+            {boot.vote_mode === "live" ? "MODE LIVE · 1 UNDIANGAN 1 SUARA" : "MODE SIMULASI"}
+          </p>
         </header>
 
         <div className="flex w-full flex-col items-center md:flex-1 md:justify-center">
