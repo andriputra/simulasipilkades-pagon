@@ -33,5 +33,15 @@ export async function GET(req: Request) {
     });
   }
 
-  return NextResponse.json({ candidates: rows, totals: tot });
+  const [statusRow] = await sql`select value from settings where key = 'election_status'`;
+  const recent = await sql`select id, action, detail, created_at from audit_logs
+                            where action in ('VOTE_CAST', 'VOTE_UPDATED', 'VOTES_RESET')
+                            order by id desc limit 10`;
+
+  return NextResponse.json({
+    candidates: rows,
+    totals: tot,
+    status: statusRow?.value === "closed" ? "closed" : "open",
+    recent,
+  });
 }
