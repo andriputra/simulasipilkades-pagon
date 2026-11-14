@@ -81,6 +81,16 @@ body {
   body {
     background: #fff !important;
   }
+  .print-letter {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .letter-card {
+    border: 0 !important;
+    box-shadow: none !important;
+    max-width: 100% !important;
+    padding: 0 0 6mm !important;
+  }
   @page {
     margin: 10mm;
   }

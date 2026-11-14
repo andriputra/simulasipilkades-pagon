@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 140">
+  <path d="M60 4 L112 20 V70 C112 104 88 126 60 136 C32 126 8 104 8 70 V20 Z" fill="#15803d" stroke="#facc15" stroke-width="4"/>
+  <text x="60" y="66" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#ffffff">LOGO</text>
+  <text x="60" y="86" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#ffffff">DESA</text>
+</svg>

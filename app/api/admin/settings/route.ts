@@ -4,7 +4,18 @@ import { audit, clientIp } from "@/lib/audit";
 import { hashPassword, verifyPassword } from "@/lib/auth";
 import { ensureSchema, getSettings, setSetting } from "@/lib/db";
 
-const PUBLIC_KEYS = ["title_line1", "title_line2", "election_status", "admin_username"] as const;
+const PUBLIC_KEYS = [
+  "title_line1",
+  "title_line2",
+  "election_status",
+  "admin_username",
+  "invite_date",
+  "invite_time",
+  "invite_tps",
+  "invite_address",
+  "invite_watermark",
+  "logo_url",
+] as const;
 
 export async function GET() {
   await ensureSchema();
@@ -34,6 +45,21 @@ export async function PUT(req: Request) {
     const status = body.election_status === "closed" ? "closed" : "open";
     await setSetting("election_status", status);
     changed.push(`status pemungutan: ${status}`);
+  }
+  const TEXT_KEYS = ["title_line1", "title_line2", "invite_date", "invite_time", "invite_tps", "invite_address", "invite_watermark"] as const;
+  for (const key of TEXT_KEYS) {
+    if (body[key] !== undefined) {
+      await setSetting(key, String(body[key]).trim());
+      changed.push(key);
+    }
+  }
+  if (body.logo_url !== undefined) {
+    const logo = String(body.logo_url).trim();
+    const okLogo = logo === "" || logo.startsWith("/seed/") || logo.startsWith("data:image/");
+    if (!okLogo) return NextResponse.json({ error: "Format logo tidak didukung." }, { status: 400 });
+    if (logo.length > 1_500_000) return NextResponse.json({ error: "Ukuran logo terlalu besar." }, { status: 413 });
+    await setSetting("logo_url", logo || "/seed/logo-desa.svg");
+    changed.push("logo");
   }
   if (changed.length) await audit("SETTINGS_UPDATED", changed.join(", "), "admin", ip);
 

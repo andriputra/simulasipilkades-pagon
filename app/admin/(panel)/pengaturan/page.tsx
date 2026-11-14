@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ConfirmModal from "@/components/ConfirmModal";
 import { useToast } from "@/components/Toast";
 
@@ -10,6 +10,14 @@ export default function AdminSettingsPage() {
   const [title2, setTitle2] = useState("");
   const [status, setStatus] = useState<"open" | "closed">("open");
   const [saving, setSaving] = useState(false);
+  const [inviteDate, setInviteDate] = useState("");
+  const [inviteTime, setInviteTime] = useState("");
+  const [inviteTps, setInviteTps] = useState("");
+  const [inviteAddress, setInviteAddress] = useState("");
+  const [inviteWatermark, setInviteWatermark] = useState("");
+  const [logoUrl, setLogoUrl] = useState("/seed/logo-desa.svg");
+  const [inviteSaving, setInviteSaving] = useState(false);
+  const logoRef = useRef<HTMLInputElement>(null);
   const [curPw, setCurPw] = useState("");
   const [newPw, setNewPw] = useState("");
   const [confPw, setConfPw] = useState("");
@@ -24,9 +32,63 @@ export default function AdminSettingsPage() {
         setTitle1(s.title_line1 || "");
         setTitle2(s.title_line2 || "");
         setStatus(s.election_status === "closed" ? "closed" : "open");
+        setInviteDate(s.invite_date || "Minggu 6 Desember 2026");
+        setInviteTime(s.invite_time || "07:00 s/d 13:00 WIB");
+        setInviteTps(s.invite_tps || "01 s/d 06");
+        setInviteAddress(s.invite_address || "Desa Pagon, Purwadadi");
+        setInviteWatermark(s.invite_watermark || "");
+        setLogoUrl(s.logo_url || "/seed/logo-desa.svg");
       }
     })();
   }, []);
+
+  const pickLogo = (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast("File harus berupa gambar.", "error");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const maxW = 256;
+        const scale = Math.min(1, maxW / img.width);
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        setLogoUrl(canvas.toDataURL("image/png"));
+        toast("Logo dimuat. Jangan lupa Simpan.", "info");
+      };
+      img.src = String(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const saveInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setInviteSaving(true);
+    const res = await fetch("/api/admin/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        invite_date: inviteDate,
+        invite_time: inviteTime,
+        invite_tps: inviteTps,
+        invite_address: inviteAddress,
+        invite_watermark: inviteWatermark,
+        logo_url: logoUrl,
+      }),
+    });
+    setInviteSaving(false);
+    if (!res.ok) {
+      toast("Gagal menyimpan pengaturan surat.", "error");
+      return;
+    }
+    toast("Pengaturan surat undangan tersimpan.", "success");
+  };
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -122,6 +184,83 @@ export default function AdminSettingsPage() {
         >
           {saving ? "Menyimpan…" : "Simpan Pengaturan"}
         </button>
+      </form>
+
+      <form onSubmit={saveInvite} className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-sm font-bold text-slate-800">Surat Undangan (Lembar Cetak QR)</h3>
+          <img src={logoUrl} alt="Logo" className="h-12 w-auto rounded border border-slate-200 bg-white" />
+        </div>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <label className="block text-[11px] font-semibold text-slate-600">
+            Hari / Tanggal
+            <input
+              value={inviteDate}
+              onChange={(e) => setInviteDate(e.target.value)}
+              className="mt-0.5 w-full rounded-md border border-slate-300 px-3 py-2 text-sm font-normal"
+            />
+          </label>
+          <label className="block text-[11px] font-semibold text-slate-600">
+            Pukul
+            <input
+              value={inviteTime}
+              onChange={(e) => setInviteTime(e.target.value)}
+              className="mt-0.5 w-full rounded-md border border-slate-300 px-3 py-2 text-sm font-normal"
+            />
+          </label>
+          <label className="block text-[11px] font-semibold text-slate-600">
+            TPS
+            <input
+              value={inviteTps}
+              onChange={(e) => setInviteTps(e.target.value)}
+              className="mt-0.5 w-full rounded-md border border-slate-300 px-3 py-2 text-sm font-normal"
+            />
+          </label>
+          <label className="block text-[11px] font-semibold text-slate-600">
+            Alamat
+            <input
+              value={inviteAddress}
+              onChange={(e) => setInviteAddress(e.target.value)}
+              className="mt-0.5 w-full rounded-md border border-slate-300 px-3 py-2 text-sm font-normal"
+            />
+          </label>
+        </div>
+        <label className="block text-[11px] font-semibold text-slate-600">
+          Watermark diagonal (kosongkan untuk tanpa watermark, cth: CONTOH)
+          <input
+            value={inviteWatermark}
+            onChange={(e) => setInviteWatermark(e.target.value)}
+            placeholder="CONTOH"
+            className="mt-0.5 w-full rounded-md border border-slate-300 px-3 py-2 text-sm font-normal"
+          />
+        </label>
+        <input
+          ref={logoRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) pickLogo(f);
+            e.target.value = "";
+          }}
+        />
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => logoRef.current?.click()}
+            className="rounded-md border border-slate-300 bg-white py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+          >
+            Ganti Logo
+          </button>
+          <button
+            type="submit"
+            disabled={inviteSaving}
+            className="rounded-md bg-blue-700 py-2 text-xs font-bold text-white hover:bg-blue-800 disabled:opacity-60"
+          >
+            {inviteSaving ? "Menyimpan…" : "Simpan Surat"}
+          </button>
+        </div>
       </form>
 
       <form onSubmit={changePw} className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">

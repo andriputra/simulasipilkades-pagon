@@ -90,7 +90,7 @@ export default function AdminVotersPage() {
           target="_blank"
           className="rounded-md bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-700"
         >
-          Cetak Lembar QR
+          Cetak Surat Undangan
         </Link>
       </div>
 

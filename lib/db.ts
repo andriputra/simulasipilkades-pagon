@@ -95,6 +95,12 @@ export function ensureSchema(): Promise<void> {
           election_status: "open",
           admin_username: "admin",
           admin_password_hash: hashPassword(process.env.ADMIN_PASSWORD || "admin123"),
+          invite_date: "Minggu 6 Desember 2026",
+          invite_time: "07:00 s/d 13:00 WIB",
+          invite_tps: "01 s/d 06",
+          invite_address: "Desa Pagon, Purwadadi",
+          invite_watermark: "",
+          logo_url: "/seed/logo-desa.svg",
         };
         for (const [key, value] of Object.entries(defaults)) {
           await sql`insert into settings (key, value) values (${key}, ${value}) on conflict (key) do nothing`;
