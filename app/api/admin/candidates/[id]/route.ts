@@ -43,3 +43,32 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   await audit("CANDIDATE_UPDATED", `Calon #${number} "${name}" diperbarui`, "admin", clientIp(req.headers));
   return NextResponse.json(updated[0]);
 }
+
+export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }> }) {
+  await ensureSchema();
+  if (!(await isAdminAuthed())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { id } = await ctx.params;
+  const candidateId = Number(id);
+
+  const [cand] = await sql`select id, number, name from candidates where id = ${candidateId}`;
+  if (!cand) return NextResponse.json({ error: "Calon tidak ditemukan." }, { status: 404 });
+
+  const [votes] = await sql`select count(*)::int as n from votes where candidate_id = ${candidateId}`;
+  if (votes.n > 0) {
+    return NextResponse.json(
+      {
+        error: `Calon nomor ${cand.number} masih punya ${votes.n} suara dan tidak dapat dihapus. Nonaktifkan saja agar hilang dari kiosk, atau gunakan Reset Semua Suara di Pengaturan.`,
+      },
+      { status: 409 }
+    );
+  }
+
+  const [rest] = await sql`select count(*)::int as n from candidates`;
+  if (rest.n <= 1) {
+    return NextResponse.json({ error: "Minimal satu calon harus tetap ada." }, { status: 409 });
+  }
+
+  await sql`delete from candidates where id = ${candidateId}`;
+  await audit("CANDIDATE_DELETED", `Calon nomor ${cand.number} "${cand.name}" dihapus`, "admin", clientIp(req.headers));
+  return NextResponse.json({ ok: true });
+}

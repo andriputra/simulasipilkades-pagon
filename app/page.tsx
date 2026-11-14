@@ -106,6 +106,20 @@ export default function KioskPage() {
 
   const selected = boot.candidates.find((c) => c.id === selectedId) || null;
 
+  const n = boot.candidates.length;
+  const gridCls =
+    n <= 1
+      ? "mx-auto w-full max-w-[13rem] grid-cols-1"
+      : n === 2
+        ? "grid-cols-2"
+        : n === 3
+          ? "grid-cols-1 sm:grid-cols-3"
+          : n <= 4
+            ? "grid-cols-2 md:grid-cols-4"
+            : n <= 6
+              ? "grid-cols-2 md:grid-cols-3"
+              : "grid-cols-2 md:grid-cols-4";
+
   if (boot.status === "closed" && step === "scan") {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center bg-slate-950 px-4 text-center text-white">
@@ -171,7 +185,7 @@ export default function KioskPage() {
         )}
         </div>
 
-        <p className="mt-auto pt-8 text-[10px] text-slate-600">developed by Flexbox Indonesia</p>
+        <p className="mt-auto pt-8 text-[10px] text-slate-600">developed by <a href="https://flexbox.id" target="_blank">Flexbox Indonesia</a></p>
       </div>
     );
   }
@@ -204,7 +218,7 @@ export default function KioskPage() {
               </div>
             )}
 
-            <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+            <div className={`mt-5 grid gap-3 md:gap-4 ${gridCls}`}>
               {boot.candidates.map((c) => {
                 const isSel = c.id === selectedId;
                 return (

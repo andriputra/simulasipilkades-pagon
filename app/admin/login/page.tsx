@@ -88,7 +88,7 @@ export default function AdminLoginPage() {
           </p>
         </form>
       </div>
-      <p className="mt-6 text-[10px] text-slate-600">developed by Flexbox Indonesia</p>
+      <p className="mt-6 text-[10px] text-slate-600">developed by <a href="https://flexbox.id" target="_blank">Flexbox Indonesia</a></p>
     </div>
   );
 }
