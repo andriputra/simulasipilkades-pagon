@@ -184,6 +184,7 @@ export default function KioskPage() {
       <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 py-5 md:py-7">
         {step === "pilih" || step === "sukses" ? (
           <>
+            <div className="md:flex md:flex-1 md:flex-col md:justify-center">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="text-lg md:text-xl font-bold text-slate-800">Silakan Pilih Calon Kepala Desa</h2>
               <span className="rounded-full border border-slate-300 bg-white px-3 py-1 text-xs text-slate-600">
@@ -233,6 +234,7 @@ export default function KioskPage() {
                 );
               })}
             </div>
+            </div>
 
             <div className="mt-auto pt-6">
               <button
@@ -258,7 +260,7 @@ export default function KioskPage() {
             </div>
           </>
         ) : (
-          <div className="fade-up mx-auto w-full max-w-md rounded-xl bg-white p-6 text-center shadow-md">
+          <div className="fade-up mx-auto w-full max-w-md rounded-xl bg-white p-6 text-center shadow-md md:my-auto">
             <p className="text-sm text-slate-600">Anda akan memilih calon berikut:</p>
             {selected && (
               <>
