@@ -62,7 +62,7 @@ function timeAgo(iso: string, now: number) {
   if (m < 60) return `${m} menit lalu`;
   const h = Math.floor(m / 60);
   if (h < 24) return `${h} jam lalu`;
-  return new Date(iso).toLocaleString("id-ID", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleString("id-ID", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" });
 }
 
 const ACT_STYLE: Record<string, { dot: string; label: string }> = {

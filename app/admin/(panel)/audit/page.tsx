@@ -30,6 +30,7 @@ export default async function AdminAuditPage() {
       hour: "2-digit",
       minute: "2-digit",
       second: "2-digit",
+      timeZone: "Asia/Jakarta",
     });
 
   return (
@@ -43,7 +44,7 @@ export default async function AdminAuditPage() {
         <table className="w-full text-left text-sm">
           <thead className="bg-slate-50 text-[11px] uppercase tracking-wide text-slate-500">
             <tr>
-              <th className="px-4 py-2">Waktu</th>
+              <th className="px-4 py-2">Waktu (WIB)</th>
               <th className="px-4 py-2">Aksi</th>
               <th className="px-4 py-2">Detail</th>
               <th className="px-4 py-2">Aktor</th>
