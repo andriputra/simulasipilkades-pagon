@@ -3,13 +3,15 @@ import { ensureSchema, sql } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
+type RecapRow = { id: number; number: number; name: string; photo_url: string; votes: number };
+
 export default async function AdminDashboardPage() {
   await ensureSchema();
-  const rows = await sql`select c.id, c.number, c.name, c.photo_url, count(v.id)::int as votes
+  const rows = (await sql`select c.id, c.number, c.name, c.photo_url, count(v.id)::int as votes
                          from candidates c
                          left join votes v on v.candidate_id = c.id
                          group by c.id, c.number, c.name, c.photo_url
-                         order by c.number`;
+                         order by c.number`) as RecapRow[];
   const [tot] = await sql`select
       (select count(*)::int from voters) as total_voters,
       (select count(*)::int from voters where has_voted) as voted,
@@ -17,7 +19,7 @@ export default async function AdminDashboardPage() {
   const [settings] = await sql`select value from settings where key = 'election_status'`;
   const status = settings?.value === "closed" ? "closed" : "open";
   const participation = tot.total_voters ? Math.round((tot.voted / tot.total_voters) * 100) : 0;
-  const maxVotes = Math.max(1, ...rows.map((r: { votes: number }) => r.votes));
+  const maxVotes = Math.max(1, ...rows.map((r) => r.votes));
 
   const stats = [
     { label: "Pemilih Terdaftar", value: tot.total_voters },

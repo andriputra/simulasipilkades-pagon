@@ -1,5 +1,6 @@
 import QRCode from "qrcode";
 import { redirect } from "next/navigation";
+import PrintButton from "@/components/PrintButton";
 import { isAdminAuthed } from "@/lib/admin";
 import { ensureSchema, sql } from "@/lib/db";
 
@@ -10,13 +11,13 @@ export default async function PrintQrPage({ searchParams }: { searchParams: Prom
   if (!(await isAdminAuthed())) redirect("/admin/login");
   const params = await searchParams;
   const onlyUnvoted = params.status === "belum";
-  const voters = onlyUnvoted
+  const voters = (onlyUnvoted
     ? await sql`select id, name, token from voters where has_voted = false order by id`
-    : await sql`select id, name, token from voters order by id`;
+    : await sql`select id, name, token from voters order by id`) as { id: number; name: string; token: string }[];
   const [t1] = await sql`select value from settings where key = 'title_line1'`;
 
   const items = await Promise.all(
-    voters.map(async (v: { id: number; name: string; token: string }) => ({
+    voters.map(async (v) => ({
       ...v,
       qr: await QRCode.toDataURL(v.token, { margin: 1, width: 240, errorCorrectionLevel: "M" }),
     }))
@@ -36,12 +37,7 @@ export default async function PrintQrPage({ searchParams }: { searchParams: Prom
           >
             {onlyUnvoted ? "Tampilkan semua" : "Hanya belum mencoblos"}
           </a>
-          <button
-            onClick={() => window.print()}
-            className="rounded-md bg-blue-700 px-4 py-2 text-xs font-bold text-white hover:bg-blue-800"
-          >
-            Cetak
-          </button>
+          <PrintButton />
         </div>
       </div>
 

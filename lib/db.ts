@@ -10,6 +10,7 @@ export const sql: Sql =
     idle_timeout: 20,
     connect_timeout: 15,
     prepare: false,
+    onnotice: () => {},
   });
 
 if (process.env.NODE_ENV !== "production") g.__pilkadesSql = sql;

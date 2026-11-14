@@ -2,18 +2,7 @@ import { NextResponse } from "next/server";
 import { isAdminAuthed } from "@/lib/admin";
 import { audit, clientIp } from "@/lib/audit";
 import { ensureSchema, sql } from "@/lib/db";
-
-const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-
-function randomBlock(len: number): string {
-  let out = "";
-  for (let i = 0; i < len; i++) out += ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
-  return out;
-}
-
-export function generateToken(): string {
-  return `PKD-${randomBlock(4)}-${randomBlock(4)}`;
-}
+import { generateToken } from "@/lib/tokens";
 
 export async function GET() {
   await ensureSchema();
@@ -42,8 +31,8 @@ export async function POST(req: Request) {
     for (let attempt = 0; attempt < 5; attempt++) {
       const token = generateToken();
       try {
-        const rows = await sql`insert into voters (name, nik, token) values (${name}, ${nik}, ${token})
-                               returning id, name, token`;
+        const rows = (await sql`insert into voters (name, nik, token) values (${name}, ${nik}, ${token})
+                               returning id, name, token`) as { id: number; name: string; token: string }[];
         created.push(rows[0]);
         break;
       } catch (err) {
