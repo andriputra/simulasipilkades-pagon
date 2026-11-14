@@ -19,25 +19,33 @@ export async function POST(req: Request) {
   const [cand] = await sql`select id from candidates where id = ${candidateId} and active = true`;
   if (!cand) return NextResponse.json({ error: "Calon tidak ditemukan." }, { status: 404 });
 
+  let isRevote = false;
   try {
     await sql.begin(async (tx) => {
       const [voter] = await tx`select id, has_voted from voters where id = ${voterId} for update`;
       if (!voter) throw new Error("VOTER_NOT_FOUND");
-      if (voter.has_voted) throw new Error("ALREADY_VOTED");
-      await tx`update voters set has_voted = true, voted_at = now() where id = ${voterId}`;
-      await tx`insert into votes (voter_id, candidate_id) values (${voterId}, ${candidateId})`;
+      isRevote = voter.has_voted;
+      if (isRevote) {
+        await tx`update votes set candidate_id = ${candidateId}, created_at = now() where voter_id = ${voterId}`;
+        await tx`update voters set voted_at = now() where id = ${voterId}`;
+      } else {
+        await tx`update voters set has_voted = true, voted_at = now() where id = ${voterId}`;
+        await tx`insert into votes (voter_id, candidate_id) values (${voterId}, ${candidateId})`;
+      }
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "";
-    if (msg === "ALREADY_VOTED") {
-      return NextResponse.json({ error: "Pemilih ini sudah menggunakan hak pilihnya." }, { status: 409 });
-    }
     if (msg === "VOTER_NOT_FOUND") {
       return NextResponse.json({ error: "Pemilih tidak ditemukan." }, { status: 404 });
     }
     throw err;
   }
 
-  await audit("VOTE_CAST", `Pemilih #${voterId} telah mencoblos (pilihan rahasia)`, "kiosk", clientIp(req.headers));
-  return NextResponse.json({ ok: true });
+  await audit(
+    isRevote ? "VOTE_UPDATED" : "VOTE_CAST",
+    `Pemilih #${voterId} ${isRevote ? "memperbarui" : "telah"} mencoblos (pilihan rahasia)`,
+    "kiosk",
+    clientIp(req.headers)
+  );
+  return NextResponse.json({ ok: true, revote: isRevote });
 }

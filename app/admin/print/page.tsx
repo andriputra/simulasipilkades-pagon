@@ -1,19 +1,28 @@
 import QRCode from "qrcode";
 import { redirect } from "next/navigation";
+import AutoPrint from "@/components/AutoPrint";
 import PrintButton from "@/components/PrintButton";
 import { isAdminAuthed } from "@/lib/admin";
 import { ensureSchema, sql } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
-export default async function PrintQrPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
+export default async function PrintQrPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string; voter?: string; auto?: string }>;
+}) {
   await ensureSchema();
   if (!(await isAdminAuthed())) redirect("/admin/login");
   const params = await searchParams;
   const onlyUnvoted = params.status === "belum";
-  const voters = (onlyUnvoted
-    ? await sql`select id, name, token from voters where has_voted = false order by id`
-    : await sql`select id, name, token from voters order by id`) as { id: number; name: string; token: string }[];
+  const singleId = Number(params.voter);
+  const isSingle = Number.isInteger(singleId) && singleId > 0;
+  const voters = (isSingle
+    ? await sql`select id, name, token from voters where id = ${singleId} order by id`
+    : onlyUnvoted
+      ? await sql`select id, name, token from voters where has_voted = false order by id`
+      : await sql`select id, name, token from voters order by id`) as { id: number; name: string; token: string }[];
 
   const rows = await sql`select key, value from settings`;
   const s: Record<string, string> = {};
@@ -44,20 +53,34 @@ export default async function PrintQrPage({ searchParams }: { searchParams: Prom
 
   return (
     <div className="min-h-dvh bg-slate-100 p-4 md:p-6">
+      {params.auto === "1" && <AutoPrint />}
       <div className="no-print mx-auto mb-5 flex max-w-3xl flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm">
         <div>
-          <h1 className="text-sm font-bold text-slate-800">Surat Undangan Pemungutan Suara</h1>
+          <h1 className="text-sm font-bold text-slate-800">
+            {isSingle ? `Surat Undangan — ${voters[0]?.name ?? "pemilih tidak ditemukan"}` : "Surat Undangan Pemungutan Suara"}
+          </h1>
           <p className="text-[11px] text-slate-500">
-            {items.length} surat siap cetak (2 per halaman A4) — isi surat diatur di Pengaturan.
+            {isSingle
+              ? "Cetak 1 surat per halaman — isi surat diatur di Pengaturan."
+              : `${items.length} surat siap cetak (2 per halaman A4) — isi surat diatur di Pengaturan.`}
           </p>
         </div>
         <div className="flex gap-2">
-          <a
-            href={onlyUnvoted ? "/admin/print" : "/admin/print?status=belum"}
-            className="rounded-md border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-          >
-            {onlyUnvoted ? "Tampilkan semua" : "Hanya belum mencoblos"}
-          </a>
+          {isSingle ? (
+            <a
+              href="/admin/print"
+              className="rounded-md border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              Cetak semua surat
+            </a>
+          ) : (
+            <a
+              href={onlyUnvoted ? "/admin/print" : "/admin/print?status=belum"}
+              className="rounded-md border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              {onlyUnvoted ? "Tampilkan semua" : "Hanya belum mencoblos"}
+            </a>
+          )}
           <PrintButton />
         </div>
       </div>

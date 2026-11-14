@@ -15,9 +15,10 @@ export async function POST(req: Request) {
 
   const [voter] = await sql`select id, name, has_voted from voters where token = ${code}`;
   if (!voter) return NextResponse.json({ error: "Kode peserta tidak terdaftar." }, { status: 404 });
-  if (voter.has_voted) {
-    return NextResponse.json({ error: "Pemilih ini sudah menggunakan hak pilihnya." }, { status: 409 });
-  }
 
-  return NextResponse.json({ ballot: makeToken(`v${voter.id}`, 300), voterName: voter.name });
+  return NextResponse.json({
+    ballot: makeToken(`v${voter.id}`, 300),
+    voterName: voter.name,
+    revote: voter.has_voted,
+  });
 }

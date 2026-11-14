@@ -12,6 +12,7 @@ export default function KioskPage() {
   const [step, setStep] = useState<Step>("scan");
   const [ballot, setBallot] = useState<string | null>(null);
   const [voterName, setVoterName] = useState("");
+  const [revote, setRevote] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [voting, setVoting] = useState(false);
@@ -32,6 +33,7 @@ export default function KioskPage() {
     setStep("scan");
     setBallot(null);
     setVoterName("");
+    setRevote(false);
     setSelectedId(null);
     setError(null);
     setManual("");
@@ -67,6 +69,7 @@ export default function KioskPage() {
       }
       setBallot(data.ballot);
       setVoterName(data.voterName);
+      setRevote(!!data.revote);
       setSelectedId(null);
       setStep("pilih");
     },
@@ -187,6 +190,12 @@ export default function KioskPage() {
                 Pemilih: <b className="text-slate-800">{voterName}</b>
               </span>
             </div>
+
+            {revote && step === "pilih" && (
+              <div className="mt-3 rounded-md border border-amber-400/60 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                Pemilih ini sudah pernah mencoblos. Pilihan baru akan menggantikan pilihan sebelumnya dan tetap dihitung 1 suara.
+              </div>
+            )}
 
             <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
               {boot.candidates.map((c) => {

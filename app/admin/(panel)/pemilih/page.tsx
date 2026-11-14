@@ -201,13 +201,23 @@ export default function AdminVotersPage() {
                     )}
                   </td>
                   <td className="px-4 py-2 text-right">
-                    <button
-                      onClick={() => setToDelete(v)}
-                      disabled={v.has_voted}
-                      className="rounded-md border border-red-200 px-2.5 py-1 text-[11px] font-semibold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      Hapus
-                    </button>
+                    <div className="flex items-center justify-end gap-1.5">
+                      <a
+                        href={`/admin/print?voter=${v.id}&auto=1`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded-md border border-slate-300 px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50"
+                      >
+                        Cetak
+                      </a>
+                      <button
+                        onClick={() => setToDelete(v)}
+                        disabled={v.has_voted}
+                        className="rounded-md border border-red-200 px-2.5 py-1 text-[11px] font-semibold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        Hapus
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
