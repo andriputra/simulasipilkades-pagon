@@ -94,7 +94,17 @@ npm run build && npx next start -p 3210
 
 Semua langkah di bawah mengubah basis data produksi Neon, jadi baru dijalankan atas persetujuan pemilik data. Urutannya disengaja: kredensial dulu, skema belakangan, supaya migrasi terakhir yang berjalan adalah yang paling akhir.
 
-0. **Jangan push ke branch yang auto-deploy** — build baru menuntut `events`/`event_settings`/`platform_users` dan `SESSION_SECRET`; bila host langsung men-deploy branch ini, produksi error sebelum migrasi sempat jalan. Kirim ke branch terpisah (mis. `platform-multi-event`) dan aktifkan preview-only, lalu jadikan satu deployment dengan langkah 1–4 di bawah. Jendela antara migrasi dan deployment juga tidak aman bagi build lama: `0003` mengganti nama `settings` menjadi `platform_settings`, sementara build lama masih membacanya.
+0. **Jangan biarkan branch ini ter-deploy sebelum migrasi** — build baru menuntut `events`/`event_settings`/`platform_users` dan `SESSION_SECRET`; bila host men-deploy branch ini ke domain produksi, kiosk langsung `500` padahal datanya aman. Branch `platform-multi-event` pernah memicu hal ini pada 2026-11-15: push branch menjadi deployment `target=production`, Neon belum bermigrasi, dan `/` maupun `/e/[slug]` membalas 500. Ciri cepat untuk membedakan build mana yang terpasang:
+
+   ```bash
+   # build baru: /platform/login 200 & /e/<slug> 500 bila DB belum bermigrasi
+   # build lama: /admin/login 200 & /platform/login 404
+   for u in / /admin/login /platform/login /e/pilkades-pagon-2026; do
+     echo "$u -> $(curl -s -o /dev/null -w '%{http_code}' https://<domain>$u)"
+   done
+   ```
+
+   Pemulihan tercepat bila itu terjadi: kembalikan deployment produksi sebelumnya (tanpa menyentuh basis data) — `vercel ls` untuk mencari id deployment production terakhir yang sehat, lalu `vercel rollback <url-deployment-tersebut>`. Jendela antara migrasi dan deployment juga tidak aman bagi build lama: `0003` mengganti nama `settings` menjadi `platform_settings`, sementara build lama masih membacanya.
 
 1. **Cadangan** — pastikan restore point Neon mencakup sesaat sebelum jendela cutover, lalu `npm run db:snapshot` sebagai salinan kedua di lokal.
 2. **`SESSION_SECRET`** — isi di dashboard Neon/Vercel (host) lebih dulu; tanpanya aplikasi menolak jalan.
