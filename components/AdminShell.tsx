@@ -3,8 +3,11 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useEventLabels } from "@/components/EventLabels";
+import { useEventPaths } from "@/lib/use-event-slug";
+import type { EventLabels } from "@/lib/event-meta";
 
-const NAV = [
+const NAV: { href: string; label: string | ((L: EventLabels) => string); icon: React.ReactNode }[] = [
   {
     href: "/admin",
     label: "Dashboard Rekap",
@@ -19,7 +22,7 @@ const NAV = [
   },
   {
     href: "/admin/calon",
-    label: "Data Calon",
+    label: (L) => `Data ${L.calonPendek}`,
     icon: (
       <>
         <rect x="2" y="5" width="20" height="14" rx="2" />
@@ -30,7 +33,7 @@ const NAV = [
   },
   {
     href: "/admin/pemilih",
-    label: "Pemilih & QR",
+    label: (L) => `${L.pemilih} & QR`,
     icon: (
       <>
         <rect x="3" y="3" width="7" height="7" />
@@ -65,9 +68,19 @@ function Icon({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function AdminShell({ children }: { children: React.ReactNode }) {
+export default function AdminShell({
+  children,
+  impersonated = false,
+}: {
+  children: React.ReactNode;
+  /** True bila yang membuka panel adalah sesi konsol superadmin, bukan login panitia. */
+  impersonated?: boolean;
+}) {
   const pathname = usePathname();
   const router = useRouter();
+  const L = useEventLabels();
+  const { slug, pageBase, apiBase, kiosk } = useEventPaths();
+  const hrefFor = (path: string) => `${pageBase}${path}`;
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -82,48 +95,80 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     });
   };
 
+  const isActive = (path: string) => {
+    const href = hrefFor(path);
+    return path === "/admin" ? pathname === href : pathname.startsWith(href);
+  };
+
+  const activeLabel = NAV.find((n) => isActive(n.href))?.label;
+
   const logout = async () => {
-    await fetch("/api/admin/logout", { method: "POST" });
-    router.push("/admin/login");
+    await fetch(`${apiBase}/admin/logout`, { method: "POST" });
+    if (impersonated) {
+      // Sesi konsol ikut memutuskan akses panel, jadi "Keluar" harus menghapus keduanya.
+      await fetch("/api/platform/logout", { method: "POST" });
+      router.push("/platform/login");
+      return;
+    }
+    router.push(`${pageBase}/admin/login`);
   };
 
   const sidebar = (isMobile: boolean) => (
     <div className={`flex h-full flex-col bg-slate-900 text-slate-200 ${collapsed && !isMobile ? "w-16" : "w-72"} transition-all`}>
       <div className={`flex items-center gap-3 border-b border-slate-800 px-4 py-4 ${collapsed && !isMobile ? "justify-center" : ""}`}>
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-blue-600 text-sm font-extrabold text-white">
-          PK
+        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-sm font-extrabold text-white ${impersonated ? "bg-violet-600" : "bg-blue-600"}`}>
+          {L.monogram}
         </span>
         {(!collapsed || isMobile) && (
           <div className="min-w-0">
-            <p className="truncate text-sm font-bold text-white">CMS Pilkades</p>
-            <p className="truncate text-[11px] text-slate-400">Simulasi Pencoblosan Digital</p>
+            <p className="truncate text-sm font-bold text-white">
+              {impersonated ? "Panel Platform" : L.panel}
+            </p>
+            <p className="truncate text-[11px] text-slate-400">
+              {impersonated ? `Masuk sebagai panitia: ${slug}` : `Simulasi ${L.calon.toLowerCase()}`}
+            </p>
           </div>
         )}
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto p-2">
         {NAV.map((item) => {
-          const active = item.href === "/admin" ? pathname === "/admin" : pathname.startsWith(item.href);
+          const active = isActive(item.href);
+          const label = typeof item.label === "function" ? item.label(L) : item.label;
           return (
             <Link
               key={item.href}
-              href={item.href}
+              href={hrefFor(item.href)}
               onClick={() => setMobileOpen(false)}
-              title={item.label}
+              title={label}
               className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                active ? "bg-blue-600 text-white" : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                active ? (impersonated ? "bg-violet-600 text-white" : "bg-blue-600 text-white") : "text-slate-300 hover:bg-slate-800 hover:text-white"
               } ${collapsed && !isMobile ? "justify-center px-2" : ""}`}
             >
               <Icon>{item.icon}</Icon>
-              {(!collapsed || isMobile) && <span className="truncate">{item.label}</span>}
+              {(!collapsed || isMobile) && <span className="truncate">{label}</span>}
             </Link>
           );
         })}
       </nav>
 
       <div className="space-y-1 border-t border-slate-800 p-2">
+        {impersonated && (
+          <Link
+            href="/platform"
+            className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm text-violet-300 hover:bg-violet-500/10 hover:text-violet-200 ${
+              collapsed && !isMobile ? "justify-center px-2" : ""
+            }`}
+            title="Kembali ke konsol platform"
+          >
+            <Icon>
+              <path d="M19 12H5M12 19l-7-7 7-7" />
+            </Icon>
+            {(!collapsed || isMobile) && <span>Kembali ke Konsol</span>}
+          </Link>
+        )}
         <Link
-          href="/"
+          href={kiosk}
           target="_blank"
           className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-slate-800 hover:text-white ${
             collapsed && !isMobile ? "justify-center px-2" : ""
@@ -175,8 +220,13 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             </Icon>
           </button>
           <h1 className="truncate text-sm font-bold text-slate-800 md:text-base">
-            {NAV.find((n) => (n.href === "/admin" ? pathname === "/admin" : pathname.startsWith(n.href)))?.label || "Admin"}
+            {typeof activeLabel === "function" ? activeLabel(L) : activeLabel || "Admin"}
           </h1>
+          {impersonated && (
+            <span className="ml-auto shrink-0 rounded-full bg-violet-100 px-2.5 py-1 text-[11px] font-semibold text-violet-700">
+              Sedang impersonasi panitia
+            </span>
+          )}
         </header>
         <main className="flex-1 p-4 md:p-6">{children}</main>
       </div>

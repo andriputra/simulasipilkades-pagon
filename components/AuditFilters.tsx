@@ -4,6 +4,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export type AuditFilterValues = {
+  /** Terisi hanya di audit konsol platform (filter lintas simulasi). */
+  event?: string;
   dari: string;
   sampai: string;
   jam_dari: string;
@@ -13,22 +15,25 @@ export type AuditFilterValues = {
   cari: string;
 };
 
-export const AUDIT_FILTER_KEYS = ["dari", "sampai", "jam_dari", "jam_sampai", "aksi", "aktor", "cari"] as const;
+export const AUDIT_FILTER_KEYS = ["event", "dari", "sampai", "jam_dari", "jam_sampai", "aksi", "aktor", "cari"] as const;
 
 const labelCls = "block text-[11px] font-semibold text-slate-600";
 const fieldCls =
   "mt-0.5 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs font-normal text-slate-700 focus:border-blue-500 focus:outline-none";
 
-const EMPTY: AuditFilterValues = { dari: "", sampai: "", jam_dari: "", jam_sampai: "", aksi: "", aktor: "", cari: "" };
+const EMPTY: AuditFilterValues = { event: "", dari: "", sampai: "", jam_dari: "", jam_sampai: "", aksi: "", aktor: "", cari: "" };
 
 export default function AuditFilters({
   values,
   aksiOptions,
   aktorOptions,
+  eventOptions,
 }: {
   values: AuditFilterValues;
   aksiOptions: string[];
   aktorOptions: string[];
+  /** Bila diberikan, filter "Simulasi" ditampilkan (halaman audit konsol). */
+  eventOptions?: { slug: string; name: string }[];
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -78,6 +83,19 @@ export default function AuditFilters({
       }}
       className="flex flex-wrap items-end gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm"
     >
+      {eventOptions && (
+        <label className={`${labelCls} w-[13rem]`}>
+          Simulasi
+          <select value={form.event || ""} onChange={(e) => applyNow("event", e.target.value)} className={fieldCls}>
+            <option value="">Semua simulasi</option>
+            {eventOptions.map((e) => (
+              <option key={e.slug} value={e.slug}>
+                {e.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       <label className={`${labelCls} w-[9.5rem]`}>
         Tanggal dari
         <input type="date" value={form.dari} onChange={(e) => applyNow("dari", e.target.value)} className={fieldCls} />

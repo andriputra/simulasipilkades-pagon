@@ -1,6 +1,22 @@
 import crypto from "crypto";
+import { cookies } from "next/headers";
 
-const SECRET = process.env.SESSION_SECRET || "pilkades-simulasi-dev-secret-ganti-saat-deploy";
+/** Nilai mentah sebuah cookie, untuk dicocokkan dengan penanda sesi di basis data. */
+export async function cookieValue(name: string): Promise<string> {
+  const store = await cookies();
+  return store.get(name)?.value ?? "";
+}
+
+/** Sidik jari SHA-256 hex, untuk menyimpan token/session id tanpa menyimpan aslinya. */
+export function sha256(value: string): string {
+  return crypto.createHash("sha256").update(value).digest("hex");
+}
+
+function secret(): string {
+  const s = process.env.SESSION_SECRET;
+  if (!s) throw new Error("SESSION_SECRET wajib di-set (token sesi ditandatangani dengannya).");
+  return s;
+}
 
 export function hashPassword(pw: string): string {
   const salt = crypto.randomBytes(16).toString("hex");
@@ -21,7 +37,7 @@ export function verifyPassword(pw: string, stored: string): boolean {
 }
 
 function hmac(body: string): string {
-  return crypto.createHmac("sha256", SECRET).update(body).digest("hex");
+  return crypto.createHmac("sha256", secret()).update(body).digest("hex");
 }
 
 export function makeToken(payload: string, ttlSeconds: number): string {
