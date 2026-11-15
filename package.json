@@ -6,7 +6,13 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "localdb": "node scripts/localdb.mjs",
+    "localdb:ensure": "node scripts/localdb.mjs ensure",
+    "db:snapshot": "node scripts/snapshot-prod.mjs",
+    "migrate": "node scripts/migrate.mjs",
+    "admin:password": "node scripts/set-admin.mjs",
+    "superadmin": "node scripts/set-superadmin.mjs"
   },
   "dependencies": {
     "html5-qrcode": "^2.3.8",

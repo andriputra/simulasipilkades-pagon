@@ -3,8 +3,8 @@ import "./globals.css";
 import { ToastProvider } from "@/components/Toast";
 
 export const metadata: Metadata = {
-  title: "Simulasi Pilkades Digital",
-  description: "Simulasi pencoblosan Pemilihan Kepala Desa digital dengan scan QR, rekap suara, dan audit log.",
+  title: "Simulasi Pemungutan Suara Digital",
+  description: "Platform simulasi pemilihan dengan scan QR, rekap suara, dan audit log.",
 };
 
 export const viewport: Viewport = {

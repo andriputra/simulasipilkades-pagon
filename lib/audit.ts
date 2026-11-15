@@ -1,7 +1,16 @@
-import { sql } from "./db";
+import { withEvent } from "./db";
 
-export async function audit(action: string, detail: string, actor = "system", ip = ""): Promise<void> {
-  await sql`insert into audit_logs (action, detail, actor, ip) values (${action}, ${detail}, ${actor}, ${ip})`;
+export async function audit(
+  eventId: number,
+  action: string,
+  detail: string,
+  actor = "system",
+  ip = "",
+): Promise<void> {
+  await withEvent(eventId, (tx) =>
+    tx`insert into audit_logs (event_id, action, detail, actor, ip)
+        values (${eventId}, ${action}, ${detail}, ${actor}, ${ip})`,
+  );
 }
 
 export function clientIp(headers: Headers): string {

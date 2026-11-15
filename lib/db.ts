@@ -1,11 +1,31 @@
-import postgres, { type Sql } from "postgres";
-import { hashPassword } from "./auth";
+import postgres, { type Sql, type TransactionSql } from "postgres";
 
-const g = globalThis as unknown as { __pilkadesSql?: Sql; __pilkadesInit?: Promise<void> };
+const url = process.env.DATABASE_URL;
+if (!url) {
+  throw new Error(
+    "DATABASE_URL belum di-set. Untuk pengembangan lokal: npm run localdb && npm run migrate " +
+      "(berkas .env.development.local yang dipakai).",
+  );
+}
+
+const host = new URL(url).hostname;
+const isLocal = host === "127.0.0.1" || host === "localhost" || host === "::1";
+
+// Penanda mode development: satu basis data dipakai bersama oleh banyak simulasi,
+// jadi pengembangan yang tidak sengaja menunjuk ke database produksi akan
+// menulis data uji ke data klien yang sedang berjalan.
+if (process.env.NODE_ENV === "development" && !isLocal && process.env.ALLOW_REMOTE_DB !== "1") {
+  throw new Error(
+    `Mode development menolak database jarak jauh (host: ${host}). ` +
+      "Jalankan DB lokal (npm run localdb) atau set ALLOW_REMOTE_DB=1 bila memang disengaja.",
+  );
+}
+
+const g = globalThis as unknown as { __pilkadesSql?: Sql };
 
 export const sql: Sql =
   g.__pilkadesSql ??
-  postgres(process.env.DATABASE_URL as string, {
+  postgres(url, {
     max: 3,
     idle_timeout: 20,
     connect_timeout: 15,
@@ -15,8 +35,11 @@ export const sql: Sql =
 
 if (process.env.NODE_ENV !== "production") g.__pilkadesSql = sql;
 
+export type EventTx = TransactionSql;
+
 export type Candidate = {
   id: number;
+  event_id: number;
   number: number;
   name: string;
   tagline: string;
@@ -26,6 +49,7 @@ export type Candidate = {
 
 export type Voter = {
   id: number;
+  event_id: number;
   name: string;
   nik: string;
   token: string;
@@ -36,6 +60,7 @@ export type Voter = {
 
 export type AuditLog = {
   id: number;
+  event_id: number;
   action: string;
   detail: string;
   actor: string;
@@ -43,105 +68,52 @@ export type AuditLog = {
   created_at: string;
 };
 
-const SCHEMA = `
-create table if not exists settings (
-  key text primary key,
-  value text not null default ''
-);
-create table if not exists candidates (
-  id serial primary key,
-  number int not null unique,
-  name text not null,
-  tagline text not null default '',
-  photo_url text not null default '/seed/placeholder.svg',
-  active boolean not null default true,
-  created_at timestamptz not null default now()
-);
-create table if not exists voters (
-  id serial primary key,
-  name text not null,
-  nik text not null default '',
-  token text not null unique,
-  has_voted boolean not null default false,
-  voted_at timestamptz,
-  created_at timestamptz not null default now()
-);
-create table if not exists votes (
-  id serial primary key,
-  voter_id int not null references voters(id) on delete cascade,
-  candidate_id int not null references candidates(id) on delete cascade,
-  created_at timestamptz not null default now()
-);
-create unique index if not exists votes_voter_uniq on votes(voter_id);
-create table if not exists audit_logs (
-  id serial primary key,
-  action text not null,
-  detail text not null default '',
-  actor text not null default 'system',
-  ip text not null default '',
-  created_at timestamptz not null default now()
-);
-`;
+/**
+ * Semua akses ke tabel per-event wajib lewat sini. Di dalam transaksi,
+ * app.event_id di-set sehingga kebijakan row-level-security membatasi baris
+ * yang bisa dibaca maupun ditulis ke satu event saja. Query yang lupa
+ * menyaring event_id tidak akan bocor — ia hanya melihat baris event itu.
+ */
+export async function withEvent<T>(eventId: number, fn: (tx: EventTx) => Promise<T>): Promise<T> {
+  const result = await sql.begin(async (tx) => {
+    await tx`select set_config('app.event_id', ${eventId}::int::text, true)`;
+    return fn(tx);
+  });
+  return result as unknown as T;
+}
 
-export function ensureSchema(): Promise<void> {
-  if (!g.__pilkadesInit) {
-    g.__pilkadesInit = (async () => {
-      await sql.unsafe(SCHEMA);
-      const [s] = await sql`select count(*)::int as n from settings`;
-      if (s.n === 0) {
-        const defaults: Record<string, string> = {
-          title_line1: "PEMERINTAH DESA SUKAMAJU",
-          title_line2: "SIMULASI PEMILIHAN KEPALA DESA PERIODE 2026-2032",
-          election_status: "open",
-          vote_mode: "simulasi",
-          admin_username: "admin",
-          admin_password_hash: hashPassword(process.env.ADMIN_PASSWORD || "admin123"),
-          invite_date: "Minggu 6 Desember 2026",
-          invite_time: "07:00 s/d 13:00 WIB",
-          invite_tps: "01 s/d 06",
-          invite_address: "Desa Pagon, Purwadadi",
-          invite_watermark: "",
-          logo_url: "/seed/logo-desa.svg",
-        };
-        for (const [key, value] of Object.entries(defaults)) {
-          await sql`insert into settings (key, value) values (${key}, ${value}) on conflict (key) do nothing`;
-        }
-        const demo: { name: string; token: string }[] = [
-          { name: "PEMILIH CONTOH 1", token: "PKD-DEMO-0001" },
-          { name: "PEMILIH CONTOH 2", token: "PKD-DEMO-0002" },
-          { name: "PEMILIH CONTOH 3", token: "PKD-DEMO-0003" },
-          { name: "PEMILIH CONTOH 4", token: "PKD-DEMO-0004" },
-          { name: "PEMILIH CONTOH 5", token: "PKD-DEMO-0005" },
-        ];
-        for (const v of demo) {
-          await sql`insert into voters (name, token) values (${v.name}, ${v.token}) on conflict (token) do nothing`;
-        }
-        await sql`insert into audit_logs (action, detail, actor) values ('SYSTEM_INIT', 'Skema database dibuat & data awal dimuat', 'system')`;
-      }
-      const [c] = await sql`select count(*)::int as n from candidates`;
-      if (c.n === 0) {
-        await sql`insert into candidates (number, name, tagline, photo_url) values
-          (1, 'CALON KEPALA DESA 1', 'Ganti nama & foto melalui Admin CMS', '/seed/placeholder.svg'),
-          (2, 'CALON KEPALA DESA 2', 'Ganti nama & foto melalui Admin CMS', '/seed/placeholder.svg'),
-          (3, 'ADE GUNAWAN, S.T.', 'Ganti nama & foto melalui Admin CMS', '/seed/calon-3.jpg'),
-          (4, 'CALON KEPALA DESA 4', 'Ganti nama & foto melalui Admin CMS', '/seed/placeholder.svg')`;
-      }
-    })().catch((err) => {
-      g.__pilkadesInit = undefined;
-      throw err;
-    });
+/**
+ * Jalur konsol platform: baca (dan hapus) lintas simulasi.
+ *
+ * app.platform_admin di-set tanpa app.event_id, sehingga kebijakan RLS membuka
+ * semua baris untuk SELECT/DELETE tetapi tetap menolak INSERT/UPDATE — penulis
+ * data event wajib lewat withEvent(). Jangan pakai ini untuk membaca satu event
+ * tertentu; denganEvent() lebih tepat karena ikut membatasi kecerobohan filter.
+ */
+export async function withPlatform<T>(fn: (tx: EventTx) => Promise<T>): Promise<T> {
+  const result = await sql.begin(async (tx) => {
+    await tx`select set_config('app.platform_admin', '1', true)`;
+    return fn(tx);
+  });
+  return result as unknown as T;
+}
+
+export async function getEventSettings(eventId: number): Promise<Record<string, string>> {
+  return withEvent(eventId, async (tx) => {
+    const rows = await tx`select key, value from event_settings`;
+    const out: Record<string, string> = {};
+    for (const r of rows) out[r.key] = r.value;
+    return out;
+  });
+}
+
+export async function setEventSetting(eventId: number, key: string, value: string, tx?: EventTx): Promise<void> {
+  const write = (q: EventTx) =>
+    q`insert into event_settings (event_id, key, value) values (${eventId}, ${key}, ${value})
+       on conflict (event_id, key) do update set value = excluded.value`;
+  if (tx) {
+    await write(tx);
+    return;
   }
-  return g.__pilkadesInit;
-}
-
-export async function getSettings(): Promise<Record<string, string>> {
-  const rows = await sql`select key, value from settings`;
-  const out: Record<string, string> = {};
-  for (const r of rows) out[r.key] = r.value;
-  return out;
-}
-
-export async function setSetting(key: string, value: string): Promise<void> {
-  await sql`insert into settings (key, value) values (${key}, ${value})
-            on conflict (key) do update set value = excluded.value`;
+  await withEvent(eventId, write);
 }
