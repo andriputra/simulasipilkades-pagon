@@ -15,5 +15,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# Sandi sementara hasil skrip agent — jangan pernah ikut commit
+.sandi-*
+
 # Postgres lokal untuk pengujian (.localdb berisi data & log)
 .localdb/

@@ -121,8 +121,22 @@ Dua hal yang terverifikasi di tiruan dan perlu diketahui lebih dulu:
 
 1. **Ganti sandi panel panitia** — sesi produksi (`pilkades_admin=…`) sempat tertempel di percakapan:
    `echo -ne 'SANDI-BARU\n' | npm run admin:password -- pilkades-pagon-2026 admin --allow-remote`
-2. **Role aplikasi non-BYPASSRLS di Neon** (mis. `pilkades_app`) agar RLS benar-benar mengikat, lalu
-   arahkan `DATABASE_URL` Vercel ke role itu. Sebelum ini, isolasi event hanya dijaga kode aplikasi.
+2. **Role aplikasi non-BYPASSRLS di Neon** — **SELESAI 2026-11-15 22:22 WIB.**
+   `pilkades_app` dibuat (`nobypassrls noinherit`, sandi acak — DSN di `.sandi-dsn-pilkades-app.txt`,
+   di-gitignore), diberi `usage on schema public` + DML semua tabel + sequence +
+   `alter default privileges` agar tabel hasil migrasi berikutnya ikut ter-grant, lalu
+   `DATABASE_URL` Production di Vercel diarahkan ke role itu dan build di-deploy ulang
+   (`simulasipilkades-pagon-c7lrus46u-`, ● Ready 45 s). Bukti penegakan RLS: `count(*) from voters`
+   tanpa GUC = 0, `app.event_id=1` = 15 pemilih / 4 calon / 524 audit, `app.event_id=2` = 0,
+   `app.platform_admin=1` = 15; selipan baris `event_id` lain ditolak `with check`;
+   emulasi "Reset suara" di event 2 menghapus 0 baris (sebelumnya akan menyapu 2 suara Pagon).
+   `neondb_owner` (tetap `bypassrls`) sengaja dipertahankan untuk skrip operasional di
+   `.env.local`: `migrate`, `snapshot-prod`, `admin:password`, `superadmin`.
 3. Bersihkan artefak gladi resik: `drop database pilkades_dryrun` (lokal) dan hapus
    `scripts/_dryrun-*.mjs` bila tidak dipakai lagi.
 4. Simulasi kedua tinggal dibuat dari `/platform` — tidak ada lagi langkah skema.
+   Catatan: flag `is_default` menentukan halaman mana yang dituju `/`
+   (`app/page.tsx` → `redirect('/e/' + slug default)`), dan hanya ada satu.
+   Membuat/mengaktifkan simulasi baru akan merebutnya dari Desa Pagon bila tombol
+   "Jadikan Halaman Depan" dipakai — dipulihkan 22:17 WIB lewat
+   `update events set is_default = (id = 1)` + baris `platform_audit` `EVENT_SET_DEFAULT`.
