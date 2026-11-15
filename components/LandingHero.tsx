@@ -293,6 +293,7 @@ export default function LandingHero({ events, initialActive }: Props) {
                 type="button"
                 onClick={() => setActive(i)}
                 aria-current={i === active}
+                aria-label={`${e.name} — ${e.statusLabel}`}
                 className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition ${
                   i === active
                     ? "border-emerald-300/70 bg-emerald-400/15 text-emerald-200"

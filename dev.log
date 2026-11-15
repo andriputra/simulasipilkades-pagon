@@ -1,0 +1,26 @@
+
+> simulasipilkades-pagon@1.0.0 dev
+> next dev
+
+   ▲ Next.js 15.5.29
+   - Local:        http://localhost:3000
+   - Network:      http://100.68.78.44:3000
+   - Environments: .env.development.local, .env.local
+
+ ✓ Starting...
+ ✓ Ready in 3.3s
+ ○ Compiling / ...
+ ✓ Compiled / in 1884ms (643 modules)
+ GET / 200 in 3807ms
+ ○ Compiling /e/[slug] ...
+ ✓ Compiled /e/[slug] in 1318ms (721 modules)
+ GET /e/pilkades-pagon-2026 200 in 4049ms
+ ○ Compiling /e/[slug]/admin/login ...
+ ✓ Compiled /e/[slug]/admin/login in 2.2s (728 modules)
+ GET /e/pilkades-pagon-2026/admin/login 200 in 3881ms
+ ○ Compiling /middleware ...
+ ✓ Compiled /middleware in 1573ms (115 modules)
+ ○ Compiling /platform/login ...
+ ✓ Compiled /platform/login in 637ms (736 modules)
+ GET /platform/login 200 in 993ms
+ GET / 200 in 176ms

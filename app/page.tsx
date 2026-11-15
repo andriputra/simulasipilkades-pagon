@@ -1,9 +1,16 @@
+import type { Metadata } from "next";
 import LandingHero from "@/components/LandingHero";
 import { getEventSettings } from "@/lib/db";
 import { EVENT_KIND_LABELS, votingStatus, wibLabel, type EventRow } from "@/lib/event";
 import { listEventSummaries } from "@/lib/platform";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Simulasi Pemungutan Suara Digital",
+  description:
+    "Etalade platform simulasi pemilihan: pindai kode pemilih, pilih satu calon, rekap dan audit log tercatat seketika.",
+};
 
 type LandingEvent = {
   slug: string;
