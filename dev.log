@@ -8,19 +8,7 @@
    - Environments: .env.development.local, .env.local
 
  ✓ Starting...
- ✓ Ready in 12.6s
+ ✓ Ready in 6.2s
  ○ Compiling / ...
- ✓ Compiled / in 11s (657 modules)
- GET / 200 in 16534ms
- ○ Compiling /e/[slug] ...
- ✓ Compiled /e/[slug] in 7s (735 modules)
- GET /e/pilkades-pagon-2026 200 in 13514ms
- ○ Compiling /e/[slug]/admin/login ...
- ✓ Compiled /e/[slug]/admin/login in 3.4s (728 modules)
- GET /e/pilkades-pagon-2026/admin/login 200 in 6874ms
- ○ Compiling /middleware ...
- ✓ Compiled /middleware in 576ms (115 modules)
- ○ Compiling /platform/login ...
- ✓ Compiled /platform/login in 737ms (736 modules)
- GET /platform/login 200 in 1550ms
- GET / 200 in 228ms
+ ✓ Compiled / in 2.3s (643 modules)
+ GET / 200 in 4329ms

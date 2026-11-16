@@ -1,0 +1,6 @@
+
+> simulasipilkades-pagon@1.0.0 localdb
+> node scripts/localdb.mjs
+
+Postgres lokal siap di port 54329 (db pilkades_dev, role pilkades_app).
+Tekan Ctrl+C untuk menghentikan.
